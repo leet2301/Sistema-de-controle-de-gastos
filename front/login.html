@@ -71,7 +71,7 @@
             if (response.ok) {
                 alert(result.msg);
                 localStorage.setItem("userId", result.id);
-                window.location.href = "detalhes.html";
+                window.location.href = "detalhes.html";  // Redireciona para a página de detalhes
             } else {
                 alert(result.msg);
             }

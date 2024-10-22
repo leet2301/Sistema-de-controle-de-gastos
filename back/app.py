@@ -1,5 +1,10 @@
+from flask import Flask, request, jsonify
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
 
 # Conexão com o MongoDB
 client = MongoClient("mongodb+srv://leticia23205:controlegastos123@controlegastos.fpwju.mongodb.net/")
@@ -7,48 +12,55 @@ db = client['controle_gastos']
 usuarios = db['usuarios']
 
 # Função para cadastrar um novo usuário
+@app.route('/usuarios/cadastrar', methods=['POST'])
 def cadastrar_usuario():
-    nome = input("Digite o nome: ")
-    email = input("Digite o email: ")
-    senha = input("Digite a senha: ")
+    dados = request.json
+    nome = dados.get('nome')
+    email = dados.get('email')
+    senha = dados.get('senha')
 
     if usuarios.find_one({"email": email}):
-        print("Email já cadastrado.")
+        return jsonify({"msg": "Email já cadastrado."}), 400
     else:
         usuario_id = usuarios.insert_one({
             "nome": nome,
             "email": email,
             "senha": senha
         }).inserted_id
-        print(f"Usuário cadastrado com sucesso! ID: {usuario_id}")
+        return jsonify({"msg": f"Usuário cadastrado com sucesso!", "id": str(usuario_id)}), 201
 
 # Função para login
+@app.route('/usuarios/login', methods=['POST'])
 def login_usuario():
-    email = input("Digite o email: ")
-    senha = input("Digite a senha: ")
+    dados = request.json
+    email = dados.get('email')
+    senha = dados.get('senha')
 
     usuario = usuarios.find_one({"email": email})
     if usuario and usuario["senha"] == senha:
-        print("Login realizado com sucesso!")
-        return usuario["_id"]
+        return jsonify({"msg": "Login realizado com sucesso!", "id": str(usuario["_id"])}), 200
     else:
-        print("Credenciais inválidas.")
-        return None
+        return jsonify({"msg": "Credenciais inválidas."}), 401
 
 # Função para exibir detalhes da conta
+@app.route('/usuarios/detalhes/<usuario_id>', methods=['GET'])
 def detalhes_usuario(usuario_id):
     usuario = usuarios.find_one({"_id": ObjectId(usuario_id)})
     if usuario:
-        print(f"Nome: {usuario['nome']}")
-        print(f"Email: {usuario['email']}")
+        return jsonify({
+            "nome": usuario['nome'],
+            "email": usuario['email']
+        }), 200
     else:
-        print("Usuário não encontrado.")
+        return jsonify({"msg": "Usuário não encontrado."}), 404
 
 # Função para editar dados do usuário
+@app.route('/usuarios/editar/<usuario_id>', methods=['PUT'])
 def editar_usuario(usuario_id):
-    novo_nome = input("Digite o novo nome (ou pressione Enter para manter): ")
-    novo_email = input("Digite o novo email (ou pressione Enter para manter): ")
-    nova_senha = input("Digite a nova senha (ou pressione Enter para manter): ")
+    dados = request.json
+    novo_nome = dados.get('nome')
+    novo_email = dados.get('email')
+    nova_senha = dados.get('senha')
 
     update_data = {}
     if novo_nome:
@@ -60,43 +72,10 @@ def editar_usuario(usuario_id):
 
     if update_data:
         usuarios.update_one({"_id": ObjectId(usuario_id)}, {"$set": update_data})
-        print("Dados atualizados com sucesso!")
+        return jsonify({"msg": "Dados atualizados com sucesso!"}), 200
     else:
-        print("Nenhuma alteração feita.")
+        return jsonify({"msg": "Nenhuma alteração feita."}), 400
 
-# Menu principal
-def menu():
-    while True:
-        print("\n--- MENU ---")
-        print("1. Cadastrar Usuário")
-        print("2. Login")
-        print("3. Sair da aplicação")
-
-        escolha = input("Escolha uma opção: ")
-
-        if escolha == "1":
-            cadastrar_usuario()
-        elif escolha == "2":
-            usuario_id = login_usuario()
-            if usuario_id:
-                while True:
-                    print("\n1. Exibir Detalhes da Conta")
-                    print("2. Editar Dados")
-                    print("3. Logout")
-                    sub_escolha = input("Escolha uma opção: ")
-
-                    if sub_escolha == "1":
-                        detalhes_usuario(usuario_id)
-                    elif sub_escolha == "2":
-                        editar_usuario(usuario_id)
-                    elif sub_escolha == "3":
-                        print("Logout realizado.")
-                        break
-        elif escolha == "3":
-            print("Saindo...")
-            break
-        else:
-            print("Opção inválida.")
-
-if __name__ == "__main__":
-    menu()
+# Rodar o servidor
+if __name__ == '__main__':
+    app.run(debug=True)
