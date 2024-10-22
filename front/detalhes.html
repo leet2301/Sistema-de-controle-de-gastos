@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Conta</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 400px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #detalhesConta {
+            margin-bottom: 20px;
+        }
+        button, input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #editarForm {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Detalhes da Conta</h1>
+        <div id="detalhesConta"></div>
+        <button id="editarBtn">Editar Informações</button>
+        <form id="editarForm">
+            <input type="text" id="novoNome" placeholder="Novo Nome">
+            <input type="email" id="novoEmail" placeholder="Novo Email">
+            <input type="password" id="novaSenha" placeholder="Nova Senha">
+            <button type="submit">Salvar</button>
+        </form>
+    </div>
+
+    <script>
+        async function carregarDetalhes() {
+            let userId = localStorage.getItem("userId");
+            let response = await fetch("http://localhost:5000/usuarios/detalhes/" + userId);
+            let data = await response.json();
+            document.getElementById("detalhesConta").innerText = `Nome: ${data.nome}, Email: ${data.email}`;
+        }
+        carregarDetalhes();
+
+        // Exibe o formulário de edição ao clicar no botão "Editar Informações"
+        document.getElementById("editarBtn").addEventListener("click", () => {
+            document.getElementById("editarForm").style.display = "block";
+        });
+
+        document.getElementById("editarForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            let userId = localStorage.getItem("userId");
+            let novoNome = document.getElementById("novoNome").value;
+            let novoEmail = document.getElementById("novoEmail").value;
+            let novaSenha = document.getElementById("novaSenha").value;
+
+            let response = await fetch("http://localhost:5000/usuarios/editar/" + userId, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nome: novoNome, email: novoEmail, senha: novaSenha })
+            });
+            let result = await response.json();
+            alert(result.msg);
+            location.reload(); // Recarregar para mostrar os detalhes atualizados
+        });
+    </script>
+</body>
+</html>
