@@ -29,7 +29,7 @@
         #detalhesConta {
             margin-bottom: 20px;
         }
-        button, input {
+        button, input, select {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -44,8 +44,11 @@
         button:hover {
             background-color: #45a049;
         }
-        #editarForm {
+        #editarForm, #despesaForm, #entradaForm {
             display: none;
+        }
+        .form-section {
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -54,12 +57,54 @@
         <h1>Detalhes da Conta</h1>
         <div id="detalhesConta"></div>
         <button id="editarBtn">Editar Informações</button>
+        <button id="deletarBtn" onclick="confirmarDelecao()">Excluir Conta</button>
+
+        <!-- Botões para abrir formulários de despesa e entrada -->
+        <button id="registrarDespesaBtn">Registrar Despesa</button>
+        <button id="registrarEntradaBtn">Registrar Entrada</button>
+
+        <!-- Formulário de edição de informações -->
         <form id="editarForm">
             <input type="text" id="novoNome" placeholder="Novo Nome">
             <input type="email" id="novoEmail" placeholder="Novo Email">
             <input type="password" id="novaSenha" placeholder="Nova Senha">
             <button type="submit">Salvar</button>
         </form>
+
+        <!-- Formulário para registrar despesas -->
+        <div class="form-section">
+            <h2>Registrar Despesa</h2>
+            <form id="despesaForm">
+                <input type="number" id="valorDespesa" placeholder="Valor" required>
+                <select id="categoriaDespesa" required>
+                    <option value="" disabled selected>Categoria</option>
+                    <option value="Alimentação">Alimentação</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Lazer">Lazer</option>
+                    <option value="Outros">Outros</option>
+                </select>
+                <input type="text" id="descricaoDespesa" placeholder="Descrição" required>
+                <input type="date" id="dataDespesa" required>
+                <button type="submit">Registrar Despesa</button>
+            </form>
+        </div>
+
+        <!-- Formulário para registrar entradas -->
+        <div class="form-section">
+            <h2>Registrar Entrada</h2>
+            <form id="entradaForm">
+                <input type="number" id="valorEntrada" placeholder="Valor" required>
+                <select id="categoriaEntrada" required>
+                    <option value="" disabled selected>Categoria</option>
+                    <option value="Salário">Salário</option>
+                    <option value="Investimentos">Investimentos</option>
+                    <option value="Outros">Outros</option>
+                </select>
+                <input type="text" id="descricaoEntrada" placeholder="Descrição" required>
+                <input type="date" id="dataEntrada" required>
+                <button type="submit">Registrar Entrada</button>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -71,13 +116,82 @@
         }
         carregarDetalhes();
 
-        // Exibe o formulário de edição ao clicar no botão "Editar Informações"
+        function confirmarDelecao() {
+            if (confirm("Tem certeza de que deseja excluir a conta? Esta ação não pode ser desfeita.")) {
+                let userId = localStorage.getItem("userId");
+                fetch("http://localhost:5000/usuarios/deletar/" + userId, {
+                    method: "DELETE"
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.msg);
+                    if (data.msg === "Conta deletada com sucesso!") {
+                        window.location.href = "/index.html";
+                    }
+                })
+                .catch(error => console.error("Erro:", error));
+            }
+        }
+
         document.getElementById("editarBtn").addEventListener("click", () => {
             document.getElementById("editarForm").style.display = "block";
         });
 
-        document.getElementById("editarForm").addEventListener("submit", async (e) => {
-            e.preventDefault();
+        // Mostrar formulário de despesa
+        document.getElementById("registrarDespesaBtn").addEventListener("click", () => {
+            document.getElementById("despesaForm").style.display = "block";
+            document.getElementById("entradaForm").style.display = "none";
+            document.getElementById("editarForm").style.display = "none";
+        });
+
+        // Mostrar formulário de entrada
+        document.getElementById("registrarEntradaBtn").addEventListener("click", () => {
+            document.getElementById("entradaForm").style.display = "block";
+            document.getElementById("despesaForm").style.display = "none";
+            document.getElementById("editarForm").style.display = "none";
+        });
+
+        // Registrar despesa
+        document.getElementById("despesaForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            let userId = localStorage.getItem("userId");
+            let valor = document.getElementById("valorDespesa").value;
+            let categoria = document.getElementById("categoriaDespesa").value;
+            let descricao = document.getElementById("descricaoDespesa").value;
+            let data = document.getElementById("dataDespesa").value;
+
+            let response = await fetch("http://localhost:5000/despesas/registrar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ usuario_id: userId, valor, categoria, descricao, data })
+            });
+            let result = await response.json();
+            alert(result.msg);
+            document.getElementById("despesaForm").reset();
+        });
+
+        // Registrar entrada
+        document.getElementById("entradaForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            let userId = localStorage.getItem("userId");
+            let valor = document.getElementById("valorEntrada").value;
+            let categoria = document.getElementById("categoriaEntrada").value;
+            let descricao = document.getElementById("descricaoEntrada").value;
+            let data = document.getElementById("dataEntrada").value;
+
+            let response = await fetch("http://localhost:5000/receitas/registrar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ usuario_id: userId, valor, categoria, descricao, data })
+            });
+            let result = await response.json();
+            alert(result.msg);
+            document.getElementById("entradaForm").reset();
+        });
+
+        // Editar informações do usuário
+        document.getElementById("editarForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
             let userId = localStorage.getItem("userId");
             let novoNome = document.getElementById("novoNome").value;
             let novoEmail = document.getElementById("novoEmail").value;

@@ -75,6 +75,77 @@ def editar_usuario(usuario_id):
         return jsonify({"msg": "Dados atualizados com sucesso!"}), 200
     else:
         return jsonify({"msg": "Nenhuma alteração feita."}), 400
+    
+# Função para deletar uma conta
+@app.route('/usuarios/deletar/<usuario_id>', methods=['DELETE'])
+def deletar_conta(usuario_id):
+    resultado = usuarios.delete_one({"_id": ObjectId(usuario_id)})
+    if resultado.deleted_count > 0:
+        return jsonify({"msg": "Conta deletada com sucesso!"}), 200
+    else:
+        return jsonify({"msg": "Usuário não encontrado."}), 404
+
+# Função para registrar despesas e transações
+@app.route('/despesas/registrar', methods=['POST'])
+def registrar_despesa():
+    dados = request.json
+    usuario_id = dados.get('usuario_id')
+    valor = dados.get('valor')
+    categoria = dados.get('categoria')
+    descricao = dados.get('descricao')
+    data = dados.get('data')
+
+    despesa = {
+        "usuario_id": ObjectId(usuario_id),
+        "valor": valor,
+        "categoria": categoria,
+        "descricao": descricao,
+        "data": data
+    }
+
+    db.despesas.insert_one(despesa)
+    return jsonify({"msg": "Despesa registrada com sucesso!"}), 201
+
+
+# Função para registrar entradas na conta
+@app.route('/receitas/registrar', methods=['POST'])
+def registrar_entrada():
+    dados = request.json
+    usuario_id = dados.get('usuario_id')
+    valor = dados.get('valor')
+    categoria = dados.get('categoria')
+    descricao = dados.get('descricao')
+    data = dados.get('data')
+
+    receita = {
+        "usuario_id": ObjectId(usuario_id),
+        "valor": valor,
+        "categoria": categoria,
+        "descricao": descricao,
+        "data": data
+    }
+
+    db.receitas.insert_one(receita)
+    return jsonify({"msg": "Entrada registrada com sucesso!"}), 201
+
+
+# Função para atualizar a categoria de uma despesa
+@app.route('/despesas/atualizar_categoria/<despesa_id>', methods=['PUT'])
+def atualizar_categoria_despesa(despesa_id):
+    dados = request.json
+    nova_categoria = dados.get('categoria')
+
+    resultado = db.despesas.update_one(
+        {"_id": ObjectId(despesa_id)},
+        {"$set": {"categoria": nova_categoria}}
+    )
+
+    if resultado.modified_count > 0:
+        return jsonify({"msg": "Categoria da despesa atualizada com sucesso!"}), 200
+    else:
+        return jsonify({"msg": "Despesa não encontrada."}), 404
+
+
 
 # Rodar o servidor
 if __name__ == '__main__':
