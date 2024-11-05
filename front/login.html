@@ -1,3 +1,4 @@
+<!-- login.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -19,7 +20,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            width: 300px;
+            width: 400px;
         }
         h1 {
             text-align: center;
@@ -30,20 +31,31 @@
             width: 100%;
             padding: 10px;
             margin: 10px 0;
-            border: 1px solid #ccc;
             border-radius: 5px;
         }
         button {
             width: 100%;
             padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
             background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 5px;
             cursor: pointer;
         }
         button:hover {
             background-color: #45a049;
+        }
+        .link {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .link a {
+            color: blue;
+            text-decoration: none;
+        }
+        .link a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -51,29 +63,32 @@
     <div class="container">
         <h1>Login</h1>
         <form id="loginForm">
-            <input type="email" id="emailLogin" placeholder="Email" required>
-            <input type="password" id="senhaLogin" placeholder="Senha" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="senha" placeholder="Senha" required>
             <button type="submit">Login</button>
         </form>
+        <div class="link">
+            <p>Não tem uma conta? <a href="index.html">Cadastre-se</a></p> <!-- Link para cadastro -->
+        </div>
     </div>
+
     <script>
-        document.getElementById("loginForm").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            let email = document.getElementById("emailLogin").value;
-            let senha = document.getElementById("senhaLogin").value;
+        document.getElementById("loginForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            let email = document.getElementById("email").value;
+            let senha = document.getElementById("senha").value;
 
             let response = await fetch("http://localhost:5000/usuarios/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, senha })
             });
-            let result = await response.json();
-            if (response.ok) {
-                alert(result.msg);
-                localStorage.setItem("userId", result.id);
-                window.location.href = "detalhes.html";  // Redireciona para a página de detalhes
+            let data = await response.json();
+            if (data.msg === "Login realizado com sucesso!") {
+                localStorage.setItem("userId", data.id);
+                window.location.href = "detalhes.html"; // Redireciona para detalhes após login
             } else {
-                alert(result.msg);
+                alert(data.msg);
             }
         });
     </script>

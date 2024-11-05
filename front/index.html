@@ -1,11 +1,11 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar Usuário</title>
+    <title>Cadastro</title>
     <style>
-        /* Aqui está o estilo que melhora o visual */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
@@ -20,7 +20,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            width: 300px;
+            width: 400px;
         }
         h1 {
             text-align: center;
@@ -31,16 +31,16 @@
             width: 100%;
             padding: 10px;
             margin: 10px 0;
-            border: 1px solid #ccc;
             border-radius: 5px;
         }
         button {
             width: 100%;
             padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
             background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 5px;
             cursor: pointer;
         }
         button:hover {
@@ -50,7 +50,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Cadastrar Usuário</h1>
+        <h1>Cadastro</h1>
         <form id="cadastroForm">
             <input type="text" id="nome" placeholder="Nome" required>
             <input type="email" id="email" placeholder="Email" required>
@@ -58,9 +58,10 @@
             <button type="submit">Cadastrar</button>
         </form>
     </div>
+
     <script>
-        document.getElementById("cadastroForm").addEventListener("submit", async (e) => {
-            e.preventDefault();
+        document.getElementById("cadastroForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
             let nome = document.getElementById("nome").value;
             let email = document.getElementById("email").value;
             let senha = document.getElementById("senha").value;
@@ -70,8 +71,11 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ nome, email, senha })
             });
-            let result = await response.json();
-            alert(result.msg);
+            let data = await response.json();
+            alert(data.msg);
+            if (data.msg === "Usuário cadastrado com sucesso!") {
+                window.location.href = "login.html"; // Redireciona para login após cadastro
+            }
         });
     </script>
 </body>

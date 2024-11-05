@@ -26,8 +26,11 @@
             font-size: 24px;
             margin-bottom: 20px;
         }
-        #detalhesConta {
-            margin-bottom: 20px;
+        .info-box {
+            background-color: #e0e0e0;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
         }
         button, input, select {
             width: 100%;
@@ -55,11 +58,12 @@
 <body>
     <div class="container">
         <h1>Detalhes da Conta</h1>
-        <div id="detalhesConta"></div>
+        <div id="detalhesConta" class="info-box"></div>
+        <div id="despesas" class="info-box"></div>
+        <div id="entradas" class="info-box"></div>
         <button id="editarBtn">Editar Informações</button>
         <button id="deletarBtn" onclick="confirmarDelecao()">Excluir Conta</button>
 
-        <!-- Botões para abrir formulários de despesa e entrada -->
         <button id="registrarDespesaBtn">Registrar Despesa</button>
         <button id="registrarEntradaBtn">Registrar Entrada</button>
 
@@ -73,7 +77,6 @@
 
         <!-- Formulário para registrar despesas -->
         <div class="form-section">
-            <h2>Registrar Despesa</h2>
             <form id="despesaForm">
                 <input type="number" id="valorDespesa" placeholder="Valor" required>
                 <select id="categoriaDespesa" required>
@@ -91,7 +94,6 @@
 
         <!-- Formulário para registrar entradas -->
         <div class="form-section">
-            <h2>Registrar Entrada</h2>
             <form id="entradaForm">
                 <input type="number" id="valorEntrada" placeholder="Valor" required>
                 <select id="categoriaEntrada" required>
@@ -112,9 +114,104 @@
             let userId = localStorage.getItem("userId");
             let response = await fetch("http://localhost:5000/usuarios/detalhes/" + userId);
             let data = await response.json();
-            document.getElementById("detalhesConta").innerText = `Nome: ${data.nome}, Email: ${data.email}`;
+
+            // Exibe apenas nome e email
+            document.getElementById("detalhesConta").innerHTML = `
+                <strong>Nome:</strong> ${data.nome} <br>
+                <strong>Email:</strong> ${data.email}
+            `;
+            carregarDespesas(userId);
+            carregarEntradas(userId);
+        }
+
+        async function carregarDespesas(userId) {
+    let response = await fetch("http://localhost:5000/despesas/" + userId);
+    let data = await response.json();
+    
+    // Verifica se há despesas e calcula o total
+    if (Array.isArray(data) && data.length > 0) {
+        let totalDespesas = data.reduce((acc, despesa) => acc + despesa.valor, 0);
+        document.getElementById("despesas").innerHTML = `<strong>Despesas:</strong> R$ ${totalDespesas.toFixed(2)}`;
+    } else {
+        document.getElementById("despesas").innerHTML = `<strong>Despesas:</strong> Nenhuma despesa registrada.`;
+    }
+}
+
+        async function carregarEntradas(userId) {
+            let response = await fetch("http://localhost:5000/receitas/" + userId);
+            let data = await response.json();
+            
+            // Verifica se há entradas e calcula o total
+            if (Array.isArray(data) && data.length > 0) {
+                let totalEntradas = data.reduce((acc, entrada) => acc + entrada.valor, 0);
+                document.getElementById("entradas").innerHTML = `<strong>Entradas:</strong> R$ ${totalEntradas.toFixed(2)}`;
+            } else {
+                document.getElementById("entradas").innerHTML = `<strong>Entradas:</strong> Nenhuma entrada registrada.`;
+            }
         }
         carregarDetalhes();
+
+        // Fechar os formulários após uso
+        function fecharFormularios() {
+            document.getElementById("despesaForm").style.display = "none";
+            document.getElementById("entradaForm").style.display = "none";
+            document.getElementById("editarForm").style.display = "none";
+        }
+
+        document.getElementById("editarBtn").addEventListener("click", () => {
+            fecharFormularios();
+            document.getElementById("editarForm").style.display = "block";
+        });
+
+        document.getElementById("registrarDespesaBtn").addEventListener("click", () => {
+            fecharFormularios();
+            document.getElementById("despesaForm").style.display = "block";
+        });
+
+        document.getElementById("registrarEntradaBtn").addEventListener("click", () => {
+            fecharFormularios();
+            document.getElementById("entradaForm").style.display = "block";
+        });
+
+        document.getElementById("despesaForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            let userId = localStorage.getItem("userId");
+            let valor = document.getElementById("valorDespesa").value;
+            let categoria = document.getElementById("categoriaDespesa").value;
+            let descricao = document.getElementById("descricaoDespesa").value;
+            let data = document.getElementById("dataDespesa").value;
+
+            let response = await fetch("http://localhost:5000/despesas/registrar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ usuario_id: userId, valor, categoria, descricao, data })
+            });
+            let result = await response.json();
+            alert(result.msg);
+            carregarDespesas(userId);
+            document.getElementById("despesaForm").reset();
+            fecharFormularios();
+        });
+
+        document.getElementById("entradaForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            let userId = localStorage.getItem("userId");
+            let valor = document.getElementById("valorEntrada").value;
+            let categoria = document.getElementById("categoriaEntrada").value;
+            let descricao = document.getElementById("descricaoEntrada").value;
+            let data = document.getElementById("dataEntrada").value;
+
+            let response = await fetch("http://localhost:5000/receitas/registrar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ usuario_id: userId, valor, categoria, descricao, data })
+            });
+            let result = await response.json();
+            alert(result.msg);
+            carregarEntradas(userId);
+            document.getElementById("entradaForm").reset();
+            fecharFormularios();
+        });
 
         function confirmarDelecao() {
             if (confirm("Tem certeza de que deseja excluir a conta? Esta ação não pode ser desfeita.")) {
@@ -132,80 +229,6 @@
                 .catch(error => console.error("Erro:", error));
             }
         }
-
-        document.getElementById("editarBtn").addEventListener("click", () => {
-            document.getElementById("editarForm").style.display = "block";
-        });
-
-        // Mostrar formulário de despesa
-        document.getElementById("registrarDespesaBtn").addEventListener("click", () => {
-            document.getElementById("despesaForm").style.display = "block";
-            document.getElementById("entradaForm").style.display = "none";
-            document.getElementById("editarForm").style.display = "none";
-        });
-
-        // Mostrar formulário de entrada
-        document.getElementById("registrarEntradaBtn").addEventListener("click", () => {
-            document.getElementById("entradaForm").style.display = "block";
-            document.getElementById("despesaForm").style.display = "none";
-            document.getElementById("editarForm").style.display = "none";
-        });
-
-        // Registrar despesa
-        document.getElementById("despesaForm").addEventListener("submit", async (event) => {
-            event.preventDefault();
-            let userId = localStorage.getItem("userId");
-            let valor = document.getElementById("valorDespesa").value;
-            let categoria = document.getElementById("categoriaDespesa").value;
-            let descricao = document.getElementById("descricaoDespesa").value;
-            let data = document.getElementById("dataDespesa").value;
-
-            let response = await fetch("http://localhost:5000/despesas/registrar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ usuario_id: userId, valor, categoria, descricao, data })
-            });
-            let result = await response.json();
-            alert(result.msg);
-            document.getElementById("despesaForm").reset();
-        });
-
-        // Registrar entrada
-        document.getElementById("entradaForm").addEventListener("submit", async (event) => {
-            event.preventDefault();
-            let userId = localStorage.getItem("userId");
-            let valor = document.getElementById("valorEntrada").value;
-            let categoria = document.getElementById("categoriaEntrada").value;
-            let descricao = document.getElementById("descricaoEntrada").value;
-            let data = document.getElementById("dataEntrada").value;
-
-            let response = await fetch("http://localhost:5000/receitas/registrar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ usuario_id: userId, valor, categoria, descricao, data })
-            });
-            let result = await response.json();
-            alert(result.msg);
-            document.getElementById("entradaForm").reset();
-        });
-
-        // Editar informações do usuário
-        document.getElementById("editarForm").addEventListener("submit", async (event) => {
-            event.preventDefault();
-            let userId = localStorage.getItem("userId");
-            let novoNome = document.getElementById("novoNome").value;
-            let novoEmail = document.getElementById("novoEmail").value;
-            let novaSenha = document.getElementById("novaSenha").value;
-
-            let response = await fetch("http://localhost:5000/usuarios/editar/" + userId, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ nome: novoNome, email: novoEmail, senha: novaSenha })
-            });
-            let result = await response.json();
-            alert(result.msg);
-            location.reload(); // Recarregar para mostrar os detalhes atualizados
-        });
     </script>
 </body>
 </html>

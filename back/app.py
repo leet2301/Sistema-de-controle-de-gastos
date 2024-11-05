@@ -145,7 +145,37 @@ def atualizar_categoria_despesa(despesa_id):
     else:
         return jsonify({"msg": "Despesa não encontrada."}), 404
 
+from bson import ObjectId  # Para converter o id corretamente
 
+# Função para buscar todas as despesas de um usuário
+@app.route('/despesas/<usuario_id>', methods=['GET'])
+def buscar_despesas(usuario_id):
+    despesas = db.despesas.find({"usuario_id": ObjectId(usuario_id)})
+    lista_despesas = []
+    for despesa in despesas:
+        lista_despesas.append({
+            "valor": despesa["valor"],
+            "categoria": despesa["categoria"],
+            "descricao": despesa["descricao"],
+            "data": despesa["data"]
+        })
+    print(lista_despesas)  # Verificar o que está sendo retornado
+    return jsonify(lista_despesas), 200
+
+# Função para buscar todas as entradas de um usuário
+@app.route('/receitas/<usuario_id>', methods=['GET'])
+def buscar_entradas(usuario_id):
+    entradas = db.receitas.find({"usuario_id": ObjectId(usuario_id)})
+    lista_entradas = []
+    for entrada in entradas:
+        lista_entradas.append({
+            "valor": entrada["valor"],
+            "categoria": entrada["categoria"],
+            "descricao": entrada["descricao"],
+            "data": entrada["data"]
+        })
+    print(lista_entradas)  # Verificar o que está sendo retornado
+    return jsonify(lista_entradas), 200
 
 # Rodar o servidor
 if __name__ == '__main__':
