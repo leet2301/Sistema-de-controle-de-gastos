@@ -19,7 +19,10 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            width: 400px;
+            width: 80%; /* Aumenta a largura para 80% da tela */
+            max-width: 900px; /* Limita a largura máxima */
+            overflow-y: auto; /* Permite rolagem vertical */
+            max-height: 90vh; /* Limita a altura máxima */
         }
         h1 {
             text-align: center;
@@ -28,9 +31,9 @@
         }
         .info-box {
             background-color: #e0e0e0;
-            padding: 10px;
+            padding: 15px;
             border-radius: 5px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
         button, input, select {
             width: 100%;
@@ -50,8 +53,9 @@
         #editarForm, #despesaForm, #entradaForm {
             display: none;
         }
-        .form-section {
-            margin-top: 20px;
+        .cancel-btn {
+            background-color: #f44336;
+            color: white;
         }
     </style>
 </head>
@@ -73,40 +77,39 @@
             <input type="email" id="novoEmail" placeholder="Novo Email">
             <input type="password" id="novaSenha" placeholder="Nova Senha">
             <button type="submit">Salvar</button>
+            <button type="button" class="cancel-btn" onclick="fecharFormularios()">Cancelar</button>
         </form>
 
         <!-- Formulário para registrar despesas -->
-        <div class="form-section">
-            <form id="despesaForm">
-                <input type="number" id="valorDespesa" placeholder="Valor" required>
-                <select id="categoriaDespesa" required>
-                    <option value="" disabled selected>Categoria</option>
-                    <option value="Alimentação">Alimentação</option>
-                    <option value="Transporte">Transporte</option>
-                    <option value="Lazer">Lazer</option>
-                    <option value="Outros">Outros</option>
-                </select>
-                <input type="text" id="descricaoDespesa" placeholder="Descrição" required>
-                <input type="date" id="dataDespesa" required>
-                <button type="submit">Registrar Despesa</button>
-            </form>
-        </div>
+        <form id="despesaForm">
+            <input type="number" id="valorDespesa" placeholder="Valor" required>
+            <select id="categoriaDespesa" required>
+                <option value="" disabled selected>Categoria</option>
+                <option value="Alimentação">Alimentação</option>
+                <option value="Transporte">Transporte</option>
+                <option value="Lazer">Lazer</option>
+                <option value="Outros">Outros</option>
+            </select>
+            <input type="text" id="descricaoDespesa" placeholder="Descrição" required>
+            <input type="date" id="dataDespesa" required>
+            <button type="submit">Registrar Despesa</button>
+            <button type="button" class="cancel-btn" onclick="fecharFormularios()">Cancelar</button>
+        </form>
 
         <!-- Formulário para registrar entradas -->
-        <div class="form-section">
-            <form id="entradaForm">
-                <input type="number" id="valorEntrada" placeholder="Valor" required>
-                <select id="categoriaEntrada" required>
-                    <option value="" disabled selected>Categoria</option>
-                    <option value="Salário">Salário</option>
-                    <option value="Investimentos">Investimentos</option>
-                    <option value="Outros">Outros</option>
-                </select>
-                <input type="text" id="descricaoEntrada" placeholder="Descrição" required>
-                <input type="date" id="dataEntrada" required>
-                <button type="submit">Registrar Entrada</button>
-            </form>
-        </div>
+        <form id="entradaForm">
+            <input type="number" id="valorEntrada" placeholder="Valor" required>
+            <select id="categoriaEntrada" required>
+                <option value="" disabled selected>Categoria</option>
+                <option value="Salário">Salário</option>
+                <option value="Investimentos">Investimentos</option>
+                <option value="Outros">Outros</option>
+            </select>
+            <input type="text" id="descricaoEntrada" placeholder="Descrição" required>
+            <input type="date" id="dataEntrada" required>
+            <button type="submit">Registrar Entrada</button>
+            <button type="button" class="cancel-btn" onclick="fecharFormularios()">Cancelar</button>
+        </form>
     </div>
 
     <script>
@@ -114,8 +117,6 @@
             let userId = localStorage.getItem("userId");
             let response = await fetch("http://localhost:5000/usuarios/detalhes/" + userId);
             let data = await response.json();
-
-            // Exibe apenas nome e email
             document.getElementById("detalhesConta").innerHTML = `
                 <strong>Nome:</strong> ${data.nome} <br>
                 <strong>Email:</strong> ${data.email}
@@ -125,33 +126,43 @@
         }
 
         async function carregarDespesas(userId) {
-    let response = await fetch("http://localhost:5000/despesas/" + userId);
-    let data = await response.json();
-    
-    // Verifica se há despesas e calcula o total
-    if (Array.isArray(data) && data.length > 0) {
-        let totalDespesas = data.reduce((acc, despesa) => acc + despesa.valor, 0);
-        document.getElementById("despesas").innerHTML = `<strong>Despesas:</strong> R$ ${totalDespesas.toFixed(2)}`;
-    } else {
-        document.getElementById("despesas").innerHTML = `<strong>Despesas:</strong> Nenhuma despesa registrada.`;
-    }
-}
+            let response = await fetch("http://localhost:5000/despesas/" + userId);
+            let data = await response.json();
+            if (data && data.length > 0) {
+                let despesasHtml = data.map(despesa => `
+                    <div>
+                        <strong>Valor:</strong> R$ ${parseFloat(despesa.valor).toFixed(2)}<br>
+                        <strong>Categoria:</strong> ${despesa.categoria}<br>
+                        <strong>Descrição:</strong> ${despesa.descricao}<br>
+                        <strong>Data:</strong> ${new Date(despesa.data).toLocaleDateString()}
+                    </div><hr>
+                `).join('');
+                document.getElementById("despesas").innerHTML = `<strong>Despesas:</strong><br>${despesasHtml}`;
+            } else {
+                document.getElementById("despesas").innerHTML = `<strong>Despesas:</strong> Nenhuma despesa registrada.`;
+            }
+        }
 
         async function carregarEntradas(userId) {
             let response = await fetch("http://localhost:5000/receitas/" + userId);
             let data = await response.json();
-            
-            // Verifica se há entradas e calcula o total
-            if (Array.isArray(data) && data.length > 0) {
-                let totalEntradas = data.reduce((acc, entrada) => acc + entrada.valor, 0);
-                document.getElementById("entradas").innerHTML = `<strong>Entradas:</strong> R$ ${totalEntradas.toFixed(2)}`;
+            if (data && data.length > 0) {
+                let entradasHtml = data.map(entrada => `
+                    <div>
+                        <strong>Valor:</strong> R$ ${parseFloat(entrada.valor).toFixed(2)}<br>
+                        <strong>Categoria:</strong> ${entrada.categoria}<br>
+                        <strong>Descrição:</strong> ${entrada.descricao}<br>
+                        <strong>Data:</strong> ${new Date(entrada.data).toLocaleDateString()}
+                    </div><hr>
+                `).join('');
+                document.getElementById("entradas").innerHTML = `<strong>Entradas:</strong><br>${entradasHtml}`;
             } else {
                 document.getElementById("entradas").innerHTML = `<strong>Entradas:</strong> Nenhuma entrada registrada.`;
             }
         }
+
         carregarDetalhes();
 
-        // Fechar os formulários após uso
         function fecharFormularios() {
             document.getElementById("despesaForm").style.display = "none";
             document.getElementById("entradaForm").style.display = "none";
@@ -171,6 +182,25 @@
         document.getElementById("registrarEntradaBtn").addEventListener("click", () => {
             fecharFormularios();
             document.getElementById("entradaForm").style.display = "block";
+        });
+
+        document.getElementById("editarForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            let userId = localStorage.getItem("userId");
+            let nome = document.getElementById("novoNome").value;
+            let email = document.getElementById("novoEmail").value;
+            let senha = document.getElementById("novaSenha").value;
+
+            let response = await fetch("http://localhost:5000/usuarios/editar/" + userId, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nome, email, senha })
+            });
+            let result = await response.json();
+            alert(result.msg);
+            carregarDetalhes();
+            document.getElementById("editarForm").reset();
+            fecharFormularios();
         });
 
         document.getElementById("despesaForm").addEventListener("submit", async (event) => {
