@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dicas Financeiras</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 1000px;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .dica {
+            background-color: #e0e0e0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 16px;
+            color: #4CAF50;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dicas Financeiras</h1>
+        <div id="dicas-container">
+            <!-- Dicas serão carregadas aqui -->
+        </div>
+        <a href="detalhes.html">Voltar para Detalhes</a>
+    </div>
+
+    <script>
+        async function carregarDicas() {
+            let response = await fetch("http://localhost:5000/dicas");
+            let dicas = await response.json();
+            let dicasContainer = document.getElementById("dicas-container");
+
+            dicas.forEach(dica => {
+                let dicaDiv = document.createElement("div");
+                dicaDiv.classList.add("dica");
+                dicaDiv.innerText = dica.dica;
+                dicasContainer.appendChild(dicaDiv);
+            });
+        }
+
+        carregarDicas();
+    </script>
+</body>
+</html>

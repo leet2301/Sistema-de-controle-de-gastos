@@ -19,10 +19,10 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            width: 80%; /* Aumenta a largura para 80% da tela */
-            max-width: 900px; /* Limita a largura máxima */
-            overflow-y: auto; /* Permite rolagem vertical */
-            max-height: 90vh; /* Limita a altura máxima */
+            width: 90%;
+            max-width: 1000px;
+            overflow-y: auto;
+            max-height: 90vh;
         }
         h1 {
             text-align: center;
@@ -50,12 +50,29 @@
         button:hover {
             background-color: #45a049;
         }
-        #editarForm, #despesaForm, #entradaForm {
+        #editarForm, #despesaForm, #entradaForm, #metaForm {
             display: none;
         }
         .cancel-btn {
             background-color: #f44336;
             color: white;
+        }
+        .alerta {
+            color: red;
+            font-weight: bold;
+        }
+        #verDicasBtn {
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            font-size: 16px;
+            padding: 12px 24px;
+            border-radius: 5px;
+        }
+        #verDicasBtn:hover {
+            background-color: #007bb5;
         }
     </style>
 </head>
@@ -63,13 +80,27 @@
     <div class="container">
         <h1>Detalhes da Conta</h1>
         <div id="detalhesConta" class="info-box"></div>
+        
+        <!-- Exibir alerta de saldo -->
+        <div id="alerta-container" class="info-box" style="display:none;">
+            <p id="alerta" class="alerta"></p>
+        </div>
+
+        <!-- Exibir saldo -->
+        <div id="saldo" class="info-box"></div>
+
+        <!-- Exibir metas -->
+        <div id="metas" class="info-box"></div>
+
         <div id="despesas" class="info-box"></div>
         <div id="entradas" class="info-box"></div>
+
         <button id="editarBtn">Editar Informações</button>
         <button id="deletarBtn" onclick="confirmarDelecao()">Excluir Conta</button>
 
         <button id="registrarDespesaBtn">Registrar Despesa</button>
         <button id="registrarEntradaBtn">Registrar Entrada</button>
+        <button id="criarMetaBtn">Adicionar Nova Meta</button>
 
         <!-- Formulário de edição de informações -->
         <form id="editarForm">
@@ -110,6 +141,18 @@
             <button type="submit">Registrar Entrada</button>
             <button type="button" class="cancel-btn" onclick="fecharFormularios()">Cancelar</button>
         </form>
+
+        <!-- Formulário para adicionar metas -->
+        <form id="metaForm" onsubmit="criarMeta(event)">
+            <input type="text" id="metaDescricao" placeholder="Descrição da Meta" required>
+            <input type="number" id="metaValor" placeholder="Valor da Meta" required>
+            <input type="date" id="metaPrazo" placeholder="Prazo (opcional)">
+            <button type="submit">Criar Meta</button>
+            <button type="button" class="cancel-btn" onclick="fecharFormularios()">Cancelar</button>
+        </form>
+
+        <!-- Link para dicas -->
+        <button id="verDicasBtn" onclick="window.location.href='dicas.html'">Ver Dicas Financeiras</button>
     </div>
 
     <script>
@@ -123,8 +166,61 @@
             `;
             carregarDespesas(userId);
             carregarEntradas(userId);
+            verificarSaldo(userId);
+            carregarMetas(userId);
         }
 
+async function verificarSaldo(userId) {
+    try {
+        let saldoResponse = await fetch(`http://localhost:5000/usuarios/saldo/${userId}`);
+        let saldoData = await saldoResponse.json();
+
+        if (saldoData.saldo === undefined) {
+            document.getElementById("saldo").innerHTML = "<strong>Erro ao calcular saldo.</strong>";
+        } else {
+            document.getElementById("saldo").innerHTML = `<strong>Saldo Atual:</strong> R$ ${saldoData.saldo.toFixed(2)}`;
+            if (saldoData.saldo <= 0) {
+                document.getElementById("alerta").innerText = "Atenção: Seu saldo está negativo!";
+                document.getElementById("alerta-container").style.display = "block";
+            } else if (saldoData.saldo < 100) {
+                document.getElementById("alerta").innerText = "Atenção: Seu saldo está baixo!";
+                document.getElementById("alerta-container").style.display = "block";
+            } else {
+                document.getElementById("alerta-container").style.display = "none";
+            }
+        }
+    } catch (error) {
+        console.error("Erro ao verificar saldo:", error);
+    }
+}
+
+
+
+async function carregarMetas(userId) {
+    try {
+        let response = await fetch(`http://localhost:5000/metas/${userId}`);
+        let metas = await response.json();
+
+        if (metas.length === 0) {
+            document.getElementById("metas").innerHTML = "<strong>Você ainda não tem metas cadastradas.</strong>";
+        } else {
+            let metasHtml = metas.map(meta => `
+                <div>
+                    <strong>Meta:</strong> ${meta.meta}<br>
+                    <strong>Valor:</strong> R$ ${meta.valor.toFixed(2)}<br>
+                    <strong>Progresso:</strong> R$ ${meta.progresso.toFixed(2)}<br>
+                    <strong>Prazo:</strong> ${meta.prazo || "Sem prazo definido"}<br>
+                </div><hr>
+            `).join('');
+            document.getElementById("metas").innerHTML = `<strong>Metas:</strong><br>${metasHtml}`;
+        }
+
+    } catch (error) {
+        console.error("Erro ao carregar metas:", error);
+    }
+}
+
+   // Função para carregar despesas
         async function carregarDespesas(userId) {
             let response = await fetch("http://localhost:5000/despesas/" + userId);
             let data = await response.json();
@@ -143,6 +239,7 @@
             }
         }
 
+        // Função para carregar entradas
         async function carregarEntradas(userId) {
             let response = await fetch("http://localhost:5000/receitas/" + userId);
             let data = await response.json();
@@ -161,104 +258,38 @@
             }
         }
 
-        carregarDetalhes();
+        // Função para adicionar meta
+        async function criarMeta(event) {
+            event.preventDefault();
+            let userId = localStorage.getItem("userId");
+            let descricao = document.getElementById("metaDescricao").value;
+            let valor = document.getElementById("metaValor").value;
+            let prazo = document.getElementById("metaPrazo").value;
 
+            let response = await fetch("http://localhost:5000/metas/criar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ usuario_id: userId, meta: descricao, valor, prazo })
+            });
+            let result = await response.json();
+            alert(result.msg);
+            document.getElementById("metaForm").reset();
+        }
+
+        // Função para fechar formulários
         function fecharFormularios() {
             document.getElementById("despesaForm").style.display = "none";
             document.getElementById("entradaForm").style.display = "none";
             document.getElementById("editarForm").style.display = "none";
+            document.getElementById("metaForm").style.display = "none";
         }
 
-        document.getElementById("editarBtn").addEventListener("click", () => {
+        document.getElementById("criarMetaBtn").addEventListener("click", () => {
             fecharFormularios();
-            document.getElementById("editarForm").style.display = "block";
+            document.getElementById("metaForm").style.display = "block";
         });
 
-        document.getElementById("registrarDespesaBtn").addEventListener("click", () => {
-            fecharFormularios();
-            document.getElementById("despesaForm").style.display = "block";
-        });
-
-        document.getElementById("registrarEntradaBtn").addEventListener("click", () => {
-            fecharFormularios();
-            document.getElementById("entradaForm").style.display = "block";
-        });
-
-        document.getElementById("editarForm").addEventListener("submit", async (event) => {
-            event.preventDefault();
-            let userId = localStorage.getItem("userId");
-            let nome = document.getElementById("novoNome").value;
-            let email = document.getElementById("novoEmail").value;
-            let senha = document.getElementById("novaSenha").value;
-
-            let response = await fetch("http://localhost:5000/usuarios/editar/" + userId, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ nome, email, senha })
-            });
-            let result = await response.json();
-            alert(result.msg);
-            carregarDetalhes();
-            document.getElementById("editarForm").reset();
-            fecharFormularios();
-        });
-
-        document.getElementById("despesaForm").addEventListener("submit", async (event) => {
-            event.preventDefault();
-            let userId = localStorage.getItem("userId");
-            let valor = document.getElementById("valorDespesa").value;
-            let categoria = document.getElementById("categoriaDespesa").value;
-            let descricao = document.getElementById("descricaoDespesa").value;
-            let data = document.getElementById("dataDespesa").value;
-
-            let response = await fetch("http://localhost:5000/despesas/registrar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ usuario_id: userId, valor, categoria, descricao, data })
-            });
-            let result = await response.json();
-            alert(result.msg);
-            carregarDespesas(userId);
-            document.getElementById("despesaForm").reset();
-            fecharFormularios();
-        });
-
-        document.getElementById("entradaForm").addEventListener("submit", async (event) => {
-            event.preventDefault();
-            let userId = localStorage.getItem("userId");
-            let valor = document.getElementById("valorEntrada").value;
-            let categoria = document.getElementById("categoriaEntrada").value;
-            let descricao = document.getElementById("descricaoEntrada").value;
-            let data = document.getElementById("dataEntrada").value;
-
-            let response = await fetch("http://localhost:5000/receitas/registrar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ usuario_id: userId, valor, categoria, descricao, data })
-            });
-            let result = await response.json();
-            alert(result.msg);
-            carregarEntradas(userId);
-            document.getElementById("entradaForm").reset();
-            fecharFormularios();
-        });
-
-        function confirmarDelecao() {
-            if (confirm("Tem certeza de que deseja excluir a conta? Esta ação não pode ser desfeita.")) {
-                let userId = localStorage.getItem("userId");
-                fetch("http://localhost:5000/usuarios/deletar/" + userId, {
-                    method: "DELETE"
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.msg);
-                    if (data.msg === "Conta deletada com sucesso!") {
-                        window.location.href = "/index.html";
-                    }
-                })
-                .catch(error => console.error("Erro:", error));
-            }
-        }
+        carregarDetalhes();
     </script>
 </body>
 </html>
