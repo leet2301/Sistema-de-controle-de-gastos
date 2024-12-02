@@ -115,7 +115,7 @@ def registrar_despesa():
 
     despesa = {
         "usuario_id": ObjectId(usuario_id),
-        "valor": valor,
+        "valor": float(valor),
         "categoria": categoria,
         "descricao": descricao,
         "data": data
@@ -137,7 +137,7 @@ def registrar_entrada():
 
     receita = {
         "usuario_id": ObjectId(usuario_id),
-        "valor": valor,
+        "valor": float(valor),
         "categoria": categoria,
         "descricao": descricao,
         "data": data
@@ -347,23 +347,21 @@ def criar_meta():
     db.metas_financeiras.insert_one(nova_meta)
     return jsonify({"msg": "Meta criada com sucesso!"}), 201
 
-# Função para listas metas
-@app.route('/metas/<usuario_id>', methods=['GET'])
+@app.route('/metas_financeiras/<usuario_id>', methods=['GET'])
 def listar_metas(usuario_id):
     try:
         metas = list(db.metas_financeiras.find({"usuario_id": ObjectId(usuario_id)}))
         metas_lista = []
-        
+
         for meta in metas:
             metas_lista.append({
                 "meta": meta["meta"],
                 "valor": meta["valor"],
-                "progresso": meta.get("progresso", 0.0),  # Adicionando progresso (caso exista)
-                "prazo": meta.get("prazo", "Sem prazo definido")  # Adicionando prazo (caso exista)
+                "progresso": meta.get("progresso", 0.0),  # Progresso (opcional)
+                "prazo": meta.get("prazo", "Sem prazo definido")  # Prazo (opcional)
             })
 
         return jsonify(metas_lista), 200
-
     except Exception as e:
         print(f"Erro ao listar metas: {e}")
         return jsonify({"error": "Erro ao listar metas"}), 500

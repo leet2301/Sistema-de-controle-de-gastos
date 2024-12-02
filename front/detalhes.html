@@ -198,27 +198,39 @@ async function verificarSaldo(userId) {
 
 async function carregarMetas(userId) {
     try {
-        let response = await fetch(`http://localhost:5000/metas/${userId}`);
-        let metas = await response.json();
+        console.log("Carregando metas para UserId:", userId);
 
-        if (metas.length === 0) {
-            document.getElementById("metas").innerHTML = "<strong>Você ainda não tem metas cadastradas.</strong>";
-        } else {
+        // Agora chamando a rota /metas_financeiras/<usuario_id>
+        let response = await fetch("http://localhost:5000/metas_financeiras/" + userId);
+        console.log("Status da resposta:", response.status);
+
+        if (!response.ok) {
+            throw new Error(`Erro na API: ${response.statusText}`);
+        }
+
+        let metas = await response.json();
+        console.log("Dados recebidos:", metas);
+
+        if (metas && metas.length > 0) {
             let metasHtml = metas.map(meta => `
                 <div>
                     <strong>Meta:</strong> ${meta.meta}<br>
-                    <strong>Valor:</strong> R$ ${meta.valor.toFixed(2)}<br>
-                    <strong>Progresso:</strong> R$ ${meta.progresso.toFixed(2)}<br>
-                    <strong>Prazo:</strong> ${meta.prazo || "Sem prazo definido"}<br>
+                    <strong>Valor:</strong> R$ ${parseFloat(meta.valor).toFixed(2)}<br>
+                    <strong>Progresso:</strong> R$ ${parseFloat(meta.progresso).toFixed(2)}<br>
+                    <strong>Prazo:</strong> ${meta.prazo !== "Sem prazo definido" ? new Date(meta.prazo).toLocaleDateString() : "Sem prazo definido"}
                 </div><hr>
             `).join('');
             document.getElementById("metas").innerHTML = `<strong>Metas:</strong><br>${metasHtml}`;
+        } else {
+            document.getElementById("metas").innerHTML = `<strong>Metas:</strong> Nenhuma meta financeira registrada.`;
         }
-
     } catch (error) {
-        console.error("Erro ao carregar metas:", error);
+        console.error("Erro ao carregar metas financeiras:", error);
+        document.getElementById("metas").innerHTML = `<strong>Erro ao carregar metas financeiras.</strong>`;
     }
 }
+
+
 
    // Função para carregar despesas
         async function carregarDespesas(userId) {
@@ -283,11 +295,101 @@ async function carregarMetas(userId) {
             document.getElementById("editarForm").style.display = "none";
             document.getElementById("metaForm").style.display = "none";
         }
+        document.getElementById("editarBtn").addEventListener("click", () => {
+            fecharFormularios();
+            document.getElementById("editarForm").style.display = "block";
+        });
+
+        document.getElementById("registrarDespesaBtn").addEventListener("click", () => {
+            fecharFormularios();
+            document.getElementById("despesaForm").style.display = "block";
+        });
+
+        document.getElementById("registrarEntradaBtn").addEventListener("click", () => {
+            fecharFormularios();
+            document.getElementById("entradaForm").style.display = "block";
+        });
 
         document.getElementById("criarMetaBtn").addEventListener("click", () => {
             fecharFormularios();
             document.getElementById("metaForm").style.display = "block";
         });
+
+        document.getElementById("editarForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            let userId = localStorage.getItem("userId");
+            let nome = document.getElementById("novoNome").value;
+            let email = document.getElementById("novoEmail").value;
+            let senha = document.getElementById("novaSenha").value;
+
+            let response = await fetch("http://localhost:5000/usuarios/editar/" + userId, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nome, email, senha })
+            });
+            let result = await response.json();
+            alert(result.msg);
+            carregarDetalhes();
+            document.getElementById("editarForm").reset();
+            fecharFormularios();
+        });
+
+        document.getElementById("despesaForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            let userId = localStorage.getItem("userId");
+            let valor = document.getElementById("valorDespesa").value;
+            let categoria = document.getElementById("categoriaDespesa").value;
+            let descricao = document.getElementById("descricaoDespesa").value;
+            let data = document.getElementById("dataDespesa").value;
+
+            let response = await fetch("http://localhost:5000/despesas/registrar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ usuario_id: userId, valor, categoria, descricao, data })
+            });
+            let result = await response.json();
+            alert(result.msg);
+            carregarDespesas(userId);
+            document.getElementById("despesaForm").reset();
+            fecharFormularios();
+        });
+
+        document.getElementById("entradaForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            let userId = localStorage.getItem("userId");
+            let valor = document.getElementById("valorEntrada").value;
+            let categoria = document.getElementById("categoriaEntrada").value;
+            let descricao = document.getElementById("descricaoEntrada").value;
+            let data = document.getElementById("dataEntrada").value;
+
+            let response = await fetch("http://localhost:5000/receitas/registrar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ usuario_id: userId, valor, categoria, descricao, data })
+            });
+            let result = await response.json();
+            alert(result.msg);
+            carregarEntradas(userId);
+            document.getElementById("entradaForm").reset();
+            fecharFormularios();
+        });
+
+        function confirmarDelecao() {
+            if (confirm("Tem certeza de que deseja excluir a conta? Esta ação não pode ser desfeita.")) {
+                let userId = localStorage.getItem("userId");
+                fetch("http://localhost:5000/usuarios/deletar/" + userId, {
+                    method: "DELETE"
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.msg);
+                    if (data.msg === "Conta deletada com sucesso!") {
+                        window.location.href = "/index.html";
+                    }
+                })
+                .catch(error => console.error("Erro:", error));
+            }
+        }
 
         carregarDetalhes();
     </script>
